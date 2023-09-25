@@ -14,7 +14,7 @@ fn main() {
             Ok(mut stream) => {
                 println!("accepted new connection");
                 let mut buffer = Vec::new();
-                stream.read_to_end(&mut buffer).unwrap();
+                stream.read(&mut buffer).unwrap();
                 let _ = stream.write_all(response(HttpCode::Ok).as_bytes());
             }
             Err(e) => {
