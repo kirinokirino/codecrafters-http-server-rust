@@ -13,7 +13,8 @@ fn main() {
         match stream {
             Ok(mut stream) => {
                 println!("accepted new connection");
-                stream.read_to_end(&mut Vec::new()).unwrap();
+                let mut buffer = Vec::new();
+                stream.read_to_end(&mut buffer).unwrap();
                 let _ = stream.write_all(response(HttpCode::Ok).as_bytes());
             }
             Err(e) => {
