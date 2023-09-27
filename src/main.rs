@@ -58,7 +58,7 @@ async fn handle_connection(mut stream: TcpStream, directory: Option<String>) {
     } else if path.starts_with("/files/") {
         if let Some(dir) = directory {
             let file_path = path.split("/files/").skip(1).next().unwrap();
-            let file_path = format!(".{dir}{file_path}");
+            let file_path = format!("{dir}{file_path}");
             println!("file: {file_path}");
             if try_exists(&file_path).await.unwrap() {
                 let contents = read_to_string(&file_path).await.unwrap();
