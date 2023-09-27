@@ -22,9 +22,15 @@ fn handle_connection(mut stream: TcpStream) {
 
     let (method, path) = parse_header(&request[0]);
     let response = if path == "/" {
-        "HTTP/1.1 200 OK\r\n\r\n"
+        "HTTP/1.1 200 OK\r\n\r\n".to_owned()
+    } else if path.starts_with("/echo/") {
+        let echo = path.split("/echo").skip(1).next().unwrap();
+        let ok = "HTTP/1.1 200 OK\r\n";
+        let content_type = "Content-Type: text/plain\r\n";
+        let content_length = format!("Content-Length: {}\r\n", echo.len());
+        format!("{ok}{content_type}{content_length}\r\n")
     } else {
-        "HTTP/1.1 404 NOT FOUND\r\n\r\n"
+        "HTTP/1.1 404 NOT FOUND\r\n\r\n".to_owned()
     };
 
     stream.write_all(response.as_bytes());
