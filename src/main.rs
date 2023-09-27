@@ -28,7 +28,7 @@ fn handle_connection(mut stream: TcpStream) {
         let ok = "HTTP/1.1 200 OK\r\n";
         let content_type = "Content-Type: text/plain\r\n";
         let content_length = format!("Content-Length: {}\r\n", echo.len());
-        format!("{ok}{content_type}{content_length}\r\n")
+        format!("{ok}{content_type}{content_length}\r\n{echo}")
     } else {
         "HTTP/1.1 404 NOT FOUND\r\n\r\n".to_owned()
     };
