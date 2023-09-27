@@ -1,51 +1,45 @@
-// Uncomment this block to pass the first stage
-use std::net::TcpListener;
-
-use std::io::{Write, Read};
-use std::fmt::{self, Display};
+use std::io::{prelude::*, BufReader};
+use std::net::{TcpListener, TcpStream};
 
 fn main() {
-    // You can use print statements as follows for debugging, they'll be visible when running tests.
-    println!("Logs from your program will appear here!");
+    let address = "127.0.0.1:4221";
+    let listener = TcpListener::bind(address).unwrap();
 
-    let listener = TcpListener::bind("127.0.0.1:4221").unwrap();
     for stream in listener.incoming() {
-        match stream {
-            Ok(mut stream) => {
-                println!("accepted new connection");
-                let mut buffer = Vec::new();
-                stream.read(&mut buffer).unwrap();
-                let _ = stream.write_all(response(HttpCode::Ok).as_bytes());
-            }
-            Err(e) => {
-                println!("error: {}", e);
-            }
-        }
+        let stream = stream.unwrap();
+
+        handle_connection(stream);
     }
 }
 
-enum HttpCode {
-  Ok
+fn handle_connection(mut stream: TcpStream) {
+    let reader = BufReader::new(&mut stream);
+    let request: Vec<String> = reader.lines().map(|line| line.unwrap()).collect();
+
+    let (method, path) = parse_header(&request[0]);
+    dbg!(method, path);
+    let response = "HTTP/1.1 200 OK";
+    stream.write_all(response.as_bytes());
 }
 
-impl Display for HttpCode {
-  fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-    match self {
-      HttpCode::Ok => write!(f, "200 OK"),
-    }
-  }
+fn parse_header(line: &str) -> (HttpMethod, String) {
+    let parts: Vec<&str> = line.split_whitespace().take(3).collect();
+    assert!(parts[2].starts_with("HTTP"));
+    let method = match parts[0] {
+        "GET" => HttpMethod::Get,
+        "POST" => HttpMethod::Post,
+        _ => panic!("Unknown http method"),
+    };
+    (method, parts[1].to_owned())
 }
 
-fn response(code: HttpCode) -> String {
-  format!("HTTP/1.1 {}\r\n\r\n", code)
+#[derive(Debug)]
+enum HttpMethod {
+    Get,
+    Post,
 }
 
-#[cfg(test)]
-mod tests {
-  use crate::*;
-
-  #[test]
-  fn test_ok_response() {
-    assert_eq!("HTTP/1.1 200 OK\r\n\r\n", response(HttpCode::Ok));
-  }
+enum HttpStatus {
+    Ok,
+    NotFound,
 }
