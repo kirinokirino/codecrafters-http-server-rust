@@ -14,7 +14,7 @@ fn main() {
 
 fn handle_connection(mut stream: TcpStream) {
     let reader = BufReader::new(&mut stream);
-    let request: Vec<String> = reader.lines().map(|line| line.unwrap()).collect();
+    let request: Vec<String> = reader.lines().map(|line| line.unwrap()).take_while(|line| !line.is_empty()).collect();
 
     let (method, path) = parse_header(&request[0]);
     dbg!(method, path);
