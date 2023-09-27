@@ -37,13 +37,15 @@ async fn handle_connection(mut stream: TcpStream, directory: Option<String>) {
 
     let (method, path) = parse_header(&request[0]);
     let response = if method == HttpMethod::Post {
+        let path = path.split("/files/").skip(1).next().unwrap();
         let body: String = request
             .iter()
             .skip_while(|line| !line.is_empty())
             .skip(1)
             .copied()
             .collect();
-        let mut file = File::create(format!("{}{path}", directory.unwrap()))
+        println!("{:?}/{path}", directory);
+        let mut file = File::create(format!("{}/{path}", directory.unwrap()))
             .await
             .unwrap();
         file.write_all(body.as_bytes()).await;
