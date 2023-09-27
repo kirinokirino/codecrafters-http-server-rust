@@ -21,7 +21,6 @@ fn handle_connection(mut stream: TcpStream) {
         .collect();
 
     let (method, path) = parse_header(&request[0]);
-    dbg!(method, path);
     let response = if path == "/" {
         "HTTP/1.1 200 OK\r\n\r\n"
     } else {
