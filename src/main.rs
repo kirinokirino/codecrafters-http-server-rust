@@ -1,4 +1,4 @@
-use tokio::fs::{read_to_string, try_exists};
+use tokio::fs::{read_to_string, try_exists, File};
 use tokio::io::{AsyncBufReadExt, AsyncReadExt, AsyncWriteExt, BufReader};
 use tokio::net::{TcpListener, TcpStream};
 
@@ -36,7 +36,19 @@ async fn handle_connection(mut stream: TcpStream, directory: Option<String>) {
     let request: Vec<&str> = request_full.lines().collect();
 
     let (method, path) = parse_header(&request[0]);
-    let response = if path == "/" {
+    let response = if method == HttpMethod::Post {
+        let body: String = request
+            .iter()
+            .skip_while(|line| !line.is_empty())
+            .skip(1)
+            .copied()
+            .collect();
+        let mut file = File::create(format!("{}{path}", directory.unwrap()))
+            .await
+            .unwrap();
+        file.write_all(body.as_bytes()).await;
+        "HTTP/1.1 201 CREATED".to_owned()
+    } else if path == "/" {
         "HTTP/1.1 200 OK\r\n\r\n".to_owned()
     } else if path.starts_with("/echo/") {
         let echo = path.split("/echo/").skip(1).next().unwrap();
@@ -90,7 +102,7 @@ fn parse_header(line: &str) -> (HttpMethod, String) {
     (method, parts[1].to_owned())
 }
 
-#[derive(Debug)]
+#[derive(Debug, Eq, PartialEq)]
 enum HttpMethod {
     Get,
     Post,
