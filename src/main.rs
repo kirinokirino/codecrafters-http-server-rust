@@ -1,25 +1,33 @@
-//use std::io::{prelude::*, BufReader};
-//use std::net::{TcpListener, TcpStream};
-
+use tokio::fs::{read_to_string, try_exists};
 use tokio::io::{AsyncBufReadExt, AsyncReadExt, AsyncWriteExt, BufReader};
 use tokio::net::{TcpListener, TcpStream};
 
+use std::env::args;
+
 #[tokio::main]
 async fn main() {
+    let args: Vec<String> = args().skip(1).collect();
+    let directory = if args.len() == 2 {
+        assert!(args[0] == "--directory");
+        Some(args[1].clone())
+    } else {
+        None
+    };
+
     let address = "127.0.0.1:4221";
     let listener = TcpListener::bind(address).await.unwrap();
 
     loop {
         let (mut stream, _) = listener.accept().await.unwrap();
-
+        let directory = directory.clone();
         println!("Accepted request");
         tokio::spawn(async move {
-            handle_connection(stream).await;
+            handle_connection(stream, directory).await;
         });
     }
 }
 
-async fn handle_connection(mut stream: TcpStream) {
+async fn handle_connection(mut stream: TcpStream, directory: Option<String>) {
     println!("Handling request");
     let mut buffer = [0u8; 1024 * 8];
     let read = stream.read(&mut buffer).await.unwrap();
@@ -47,6 +55,23 @@ async fn handle_connection(mut stream: TcpStream) {
         let content_type = "Content-Type: text/plain\r\n";
         let content_length = format!("Content-Length: {}\r\n", user_agent.len());
         format!("{ok}{content_type}{content_length}\r\n{user_agent}")
+    } else if path.starts_with("/files/") {
+        if let Some(dir) = directory {
+            let file_path = path.split("/files/").skip(1).next().unwrap();
+            let file_path = format!(".{dir}{file_path}");
+            println!("file: {file_path}");
+            if try_exists(&file_path).await.unwrap() {
+                let contents = read_to_string(&file_path).await.unwrap();
+                let ok = "HTTP/1.1 200 OK\r\n";
+                let content_type = "Content-Type: application/octet-stream\r\n";
+                let content_length = format!("Content-Length: {}\r\n", contents.len());
+                format!("{ok}{content_type}{content_length}\r\n{contents}")
+            } else {
+                "HTTP/1.1 404 NOT FOUND\r\n\r\n".to_owned()
+            }
+        } else {
+            "HTTP/1.1 404 NOT FOUND\r\n\r\n".to_owned()
+        }
     } else {
         "HTTP/1.1 404 NOT FOUND\r\n\r\n".to_owned()
     };
