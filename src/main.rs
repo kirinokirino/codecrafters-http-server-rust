@@ -18,7 +18,7 @@ fn handle_connection(mut stream: TcpStream) {
 
     let (method, path) = parse_header(&request[0]);
     dbg!(method, path);
-    let response = "HTTP/1.1 200 OK";
+    let response = "HTTP/1.1 200 OK\r\n\r\n";
     stream.write_all(response.as_bytes());
 }
 
