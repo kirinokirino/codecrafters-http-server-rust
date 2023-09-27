@@ -44,12 +44,11 @@ async fn handle_connection(mut stream: TcpStream, directory: Option<String>) {
             .skip(1)
             .copied()
             .collect();
-        println!("{:?}/{path}", directory);
-        let mut file = File::create(format!("{}/{path}", directory.unwrap()))
+        let mut file = File::create(format!("{}{path}", directory.unwrap()))
             .await
             .unwrap();
         file.write_all(body.as_bytes()).await;
-        "HTTP/1.1 201 CREATED".to_owned()
+        "HTTP/1.1 201 CREATED\r\n\r\n".to_owned()
     } else if path == "/" {
         "HTTP/1.1 200 OK\r\n\r\n".to_owned()
     } else if path.starts_with("/echo/") {
