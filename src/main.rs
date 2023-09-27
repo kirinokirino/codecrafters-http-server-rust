@@ -29,6 +29,17 @@ fn handle_connection(mut stream: TcpStream) {
         let content_type = "Content-Type: text/plain\r\n";
         let content_length = format!("Content-Length: {}\r\n", echo.len());
         format!("{ok}{content_type}{content_length}\r\n{echo}")
+    } else if path.starts_with("/user-agent") {
+        let user_agent = request
+            .iter()
+            .find(|line| line.starts_with("User-Agent"))
+            .unwrap();
+        let user_agent = user_agent.split(' ').skip(1).take(1).next().unwrap();
+
+        let ok = "HTTP/1.1 200 OK\r\n";
+        let content_type = "Content-Type: text/plain\r\n";
+        let content_length = format!("Content-Length: {}\r\n", user_agent.len());
+        format!("{ok}{content_type}{content_length}\r\n{user_agent}")
     } else {
         "HTTP/1.1 404 NOT FOUND\r\n\r\n".to_owned()
     };
