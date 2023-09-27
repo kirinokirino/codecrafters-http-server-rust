@@ -24,7 +24,7 @@ fn handle_connection(mut stream: TcpStream) {
     let response = if path == "/" {
         "HTTP/1.1 200 OK\r\n\r\n".to_owned()
     } else if path.starts_with("/echo/") {
-        let echo = path.split("/echo").skip(1).next().unwrap();
+        let echo = path.split("/echo/").skip(1).next().unwrap();
         let ok = "HTTP/1.1 200 OK\r\n";
         let content_type = "Content-Type: text/plain\r\n";
         let content_length = format!("Content-Length: {}\r\n", echo.len());
