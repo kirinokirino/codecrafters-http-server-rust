@@ -1,24 +1,31 @@
-use std::io::{prelude::*, BufReader};
-use std::net::{TcpListener, TcpStream};
+//use std::io::{prelude::*, BufReader};
+//use std::net::{TcpListener, TcpStream};
 
-fn main() {
+use tokio::io::{AsyncBufReadExt, AsyncReadExt, AsyncWriteExt, BufReader};
+use tokio::net::{TcpListener, TcpStream};
+
+#[tokio::main]
+async fn main() {
     let address = "127.0.0.1:4221";
-    let listener = TcpListener::bind(address).unwrap();
+    let listener = TcpListener::bind(address).await.unwrap();
 
-    for stream in listener.incoming() {
-        let stream = stream.unwrap();
+    loop {
+        let (mut stream, _) = listener.accept().await.unwrap();
 
-        handle_connection(stream);
+        println!("Accepted request");
+        tokio::spawn(async move {
+            handle_connection(stream).await;
+        });
     }
 }
 
-fn handle_connection(mut stream: TcpStream) {
-    let reader = BufReader::new(&mut stream);
-    let request: Vec<String> = reader
-        .lines()
-        .map(|line| line.unwrap())
-        .take_while(|line| !line.is_empty())
-        .collect();
+async fn handle_connection(mut stream: TcpStream) {
+    println!("Handling request");
+    let mut buffer = [0u8; 1024 * 8];
+    let read = stream.read(&mut buffer).await.unwrap();
+    assert!(read > 0);
+    let request_full = String::from_utf8(buffer[0..read].to_vec()).unwrap();
+    let request: Vec<&str> = request_full.lines().collect();
 
     let (method, path) = parse_header(&request[0]);
     let response = if path == "/" {
@@ -44,7 +51,7 @@ fn handle_connection(mut stream: TcpStream) {
         "HTTP/1.1 404 NOT FOUND\r\n\r\n".to_owned()
     };
 
-    stream.write_all(response.as_bytes());
+    stream.write_all(response.as_bytes()).await;
 }
 
 fn parse_header(line: &str) -> (HttpMethod, String) {
