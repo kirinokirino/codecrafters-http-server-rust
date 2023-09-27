@@ -14,11 +14,20 @@ fn main() {
 
 fn handle_connection(mut stream: TcpStream) {
     let reader = BufReader::new(&mut stream);
-    let request: Vec<String> = reader.lines().map(|line| line.unwrap()).take_while(|line| !line.is_empty()).collect();
+    let request: Vec<String> = reader
+        .lines()
+        .map(|line| line.unwrap())
+        .take_while(|line| !line.is_empty())
+        .collect();
 
     let (method, path) = parse_header(&request[0]);
     dbg!(method, path);
-    let response = "HTTP/1.1 200 OK\r\n\r\n";
+    let response = if path == "/" {
+        "HTTP/1.1 200 OK\r\n\r\n"
+    } else {
+        "HTTP/1.1 404 NOT FOUND\r\n\r\n"
+    };
+
     stream.write_all(response.as_bytes());
 }
 
